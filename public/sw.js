@@ -22,7 +22,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// ================= ACTIVATE =================
+// ================= ACTIVATE =a================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>

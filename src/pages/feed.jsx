@@ -539,7 +539,7 @@ export default function Feed({
 
 
     const profile = await getUserProfile(me.id);
-    console.log(profile.avatar_url);
+   console.log(profile.avatar_url);
 
 
     const newComment = {
@@ -553,7 +553,7 @@ export default function Feed({
 
     /*  console.log(newComment) */
 
-    // 1. INSTANT UI UPDATE 
+    // 1. INSTANT UI UPDATE
     setComments((prev) => [newComment, ...prev]);
     setCommentText("");
 
@@ -710,46 +710,17 @@ export default function Feed({
       }
 
       // ================= SMART SORT (HYBRID ALGO) =================
-      /*   const scored = data.map((post) => {
-          const isRecent =
-            new Date(post.created_at) > new Date(tenHoursAgo);
-  
-          return {
-            ...post,
-            score: isRecent
-              ? Math.random() + 2 // boost recent posts
-              : Math.random(),     // random older posts
-          };
-        }); */
+      const scored = data.map((post) => {
+        const isRecent =
+          new Date(post.created_at) > new Date(tenHoursAgo);
 
-      // ================= SMART SORT (0 mins → 4 days boost + random mix) =================
-
-      const fourDaysAgo = new Date(
-        Date.now() - 4 * 24 * 60 * 60 * 1000
-      ).toISOString();
-
-      const scored = data
-        .filter((post) => {
-          // only allow posts within last 4 days
-          return new Date(post.created_at) >= new Date(fourDaysAgo);
-        })
-        .map((post) => {
-          const createdAt = new Date(post.created_at);
-          const ageInMinutes = (Date.now() - createdAt.getTime()) / (1000 * 60);
-
-          // newer posts = higher boost
-          const freshnessBoost =
-            ageInMinutes < 60
-              ? 3        // 0–1 hour → very high priority
-              : ageInMinutes < 24 * 60
-                ? 2        // 1 hour – 1 day
-                : 1;       // 1–4 days
-
-          return {
-            ...post,
-            score: freshnessBoost + Math.random(), // keep randomness
-          };
-        });
+        return {
+          ...post,
+          score: isRecent
+            ? Math.random() + 2 // boost recent posts
+            : Math.random(),     // random older posts
+        };
+      });
 
       // sort by score (mix of random + recent boost)
       const sorted = scored.sort((a, b) => b.score - a.score);
@@ -1675,20 +1646,17 @@ export default function Feed({
                     onClick={() => openUserProfile(post.user_id)}
                     className="shrink-0"
                   >
-                    <img
-                      src={
-                        // 💡 FIXED: Checks if profile_image exists AND is not empty text. Otherwise, uses your exact Gravatar URL
-                        post.profile_image && post.profile_image.trim() !== ""
-                          ? post.profile_image
-                          : "https://gravatar.com"
-                      }
-                      alt=""
-                      className="w-12 h-12 rounded-full object-cover border-2 border-purple-500 shadow-sm"
-                      onError={(e) => {
-                        // Safety fallback: If a custom image link breaks, force show your Gravatar silhouette
-                        e.target.src = "https://gravatar.com";
-                      }}
-                    />
+                    {profileImages[post.user_id] ? (
+                      <img
+                        src={post.profile_image}
+                        alt=""
+                        className="w-12 h-12 rounded-full object-cover border-2 border-purple-500 shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                        {(post.profile_image || "A").charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </button>
 
                   {/* User */}
@@ -1706,7 +1674,7 @@ export default function Feed({
           transition
         "
                     >
-                      @{post.profile_name || "user"}
+                      @{post.profile_name || "anonymous"}
                     </button>
 
                     <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -1778,18 +1746,18 @@ export default function Feed({
                           setOpenMenuId(null);
                         }}
                         className="
-            w-full
-            px-4
-            py-3
-            text-left
-            text-sm
-            text-gray-800
-            dark:text-gray-200
-            bg-transparent
-            hover:bg-purple-50
-            dark:hover:bg-white/5
-            transition-colors
-          "
+    w-full
+    px-4
+    py-3
+    text-left
+    text-sm
+    text-gray-800
+    dark:text-gray-200
+    bg-transparent
+    hover:bg-purple-50
+    dark:hover:bg-white/5
+    transition-colors
+  "
                       >
                         Share
                       </button>
@@ -1799,7 +1767,6 @@ export default function Feed({
                 </div>
 
               </div>
-
 
               {/* ================= DESCRIPTION ================= */}
               {post.description && (() => {

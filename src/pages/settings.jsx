@@ -222,7 +222,7 @@ export default function SettingsPage() {
       } = await supabase.auth.getSession();
 
       const res = await fetch(
-        "https://echxlphxafiscrwrpuve.supabase.co/functions/v1/delete-account",
+        "https://ukghwpkdlsqgwbjhmezy.supabase.co/functions/v1/delete-account",
         {
           method: "POST",
           headers: {

@@ -1675,17 +1675,20 @@ export default function Feed({
                     onClick={() => openUserProfile(post.user_id)}
                     className="shrink-0"
                   >
-                    {profileImages[post.user_id] ? (
-                      <img
-                        src={post.profile_image}
-                        alt=""
-                        className="w-12 h-12 rounded-full object-cover border-2 border-purple-500 shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                        {(post.profile_image || "A").charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <img
+                      src={
+                        // 💡 FIXED: Checks if profile_image exists AND is not empty text. Otherwise, uses your exact Gravatar URL
+                        post.profile_image && post.profile_image.trim() !== ""
+                          ? post.profile_image
+                          : "https://gravatar.com"
+                      }
+                      alt=""
+                      className="w-12 h-12 rounded-full object-cover border-2 border-purple-500 shadow-sm"
+                      onError={(e) => {
+                        // Safety fallback: If a custom image link breaks, force show your Gravatar silhouette
+                        e.target.src = "https://gravatar.com";
+                      }}
+                    />
                   </button>
 
                   {/* User */}
@@ -1703,7 +1706,7 @@ export default function Feed({
           transition
         "
                     >
-                      @{post.profile_name || "anonymous"}
+                      @{post.profile_name || "user"}
                     </button>
 
                     <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -1775,18 +1778,18 @@ export default function Feed({
                           setOpenMenuId(null);
                         }}
                         className="
-    w-full
-    px-4
-    py-3
-    text-left
-    text-sm
-    text-gray-800
-    dark:text-gray-200
-    bg-transparent
-    hover:bg-purple-50
-    dark:hover:bg-white/5
-    transition-colors
-  "
+            w-full
+            px-4
+            py-3
+            text-left
+            text-sm
+            text-gray-800
+            dark:text-gray-200
+            bg-transparent
+            hover:bg-purple-50
+            dark:hover:bg-white/5
+            transition-colors
+          "
                       >
                         Share
                       </button>
@@ -1796,6 +1799,7 @@ export default function Feed({
                 </div>
 
               </div>
+
 
               {/* ================= DESCRIPTION ================= */}
               {post.description && (() => {

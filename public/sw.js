@@ -1,65 +1,124 @@
-// ================= SERVICE WORKER (CLEAN PWA VERSION) =================
+const CACHE = "socialgist-v2";
 
-// Install
+const FILES = [
+  "/",
+  "/index.html",
+  "/logo.png",
+  "/icon.png"
+];
+
+// INSTALL
 self.addEventListener("install", (event) => {
-  console.log("Service Worker installed");
   self.skipWaiting();
+
+  event.waitUntil(
+    caches.open(CACHE).then((cache) => cache.addAll(FILES))
+  );
 });
 
-// Activate
+// ACTIVATE
 self.addEventListener("activate", (event) => {
-  console.log("Service Worker activated");
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE) {
+            return caches.delete(key);
+          }
+        })
+      )
+    )
+  );
+
+  self.clients.claim();
 });
 
-// ================= PUSH NOTIFICATION =================
+// FETCH
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
+
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+
+      return fetch(event.request)
+        .then((response) => {
+          if (!response || response.status !== 200) return response;
+
+          const copy = response.clone();
+
+          caches.open(CACHE).then((cache) => {
+            cache.put(event.request, copy);
+          });
+
+          return response;
+        })
+        .catch(() => {
+          return caches.match("/");
+        });
+    })
+  );
+});
+
+// PUSH
 self.addEventListener("push", (event) => {
   let data = {};
 
   try {
     data = event.data ? event.data.json() : {};
-  } catch (e) {
-    console.log("Push parse error", e);
-  }
-
-  const title = data.title || "SocialGist";
-  const options = {
-    body: data.body || "New notification",
-    icon: "/logo.png",
-    badge: "/logo.png",
-    data: data,
-    requireInteraction: false
-  };
+  } catch {}
 
   event.waitUntil(
-    self.registration.showNotification(title, options)
+    self.registration.showNotification(
+      data.title || "SocialGist",
+      {
+        body: data.body || "You have a new notification",
+        icon: "/logo.png",
+        badge: "/logo.png",
+        image: data.image || undefined,
+        tag: data.tag || "socialgist",
+        renotify: true,
+        vibrate: [200, 100, 200],
+        requireInteraction: false,
+        data: {
+          url: data.url || "/",
+          postId: data.postId
+        }
+      }
+    )
   );
 });
 
-// ================= NOTIFICATION CLICK =================
+// CLICK
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const postId = event.notification.data?.postId;
-  const url = postId ? `/post/${postId}` : "/";
+  const url =
+    event.notification.data?.url ||
+    (event.notification.data?.postId
+      ? `/p/${event.notification.data.postId}`
+      : "/");
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.includes(url) && "focus" in client) {
+    clients.matchAll({
+      type: "window",
+      includeUncontrolled: true
+    }).then((clientsArr) => {
+      for (const client of clientsArr) {
+        if ("focus" in client) {
+          client.navigate(url);
           return client.focus();
         }
       }
+
       return clients.openWindow(url);
     })
   );
 });
 
-// ================= SIMPLE CACHE =================
-const CACHE_NAME = "socialgist-cache-v1";
-
-self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
-  );
+// BACKGROUND SYNC
+self.addEventListener("sync", (event) => {
+  if (event.tag === "socialgist-sync") {
+    event.waitUntil(Promise.resolve());
+  }
 });

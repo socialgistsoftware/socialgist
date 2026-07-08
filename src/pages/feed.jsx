@@ -539,7 +539,7 @@ export default function Feed({
 
 
     const profile = await getUserProfile(me.id);
-   console.log(profile.avatar_url);
+    console.log(profile.avatar_url);
 
 
     const newComment = {
@@ -1326,52 +1326,38 @@ export default function Feed({
     if (!post?.id) return;
 
     try {
-      // ================= 1. GET SHARE DATA FROM BACKEND =================
       const { data, error } = await supabase.functions.invoke("share-post", {
         body: {
           postId: post.id,
-          description: post.description,
         },
       });
 
-      if (error) {
-        console.log("Share function error:", error);
-      }
+      if (error) throw error;
 
-      const shareUrl =
-        data?.shareUrl ||
-        `${window.location.origin}/p/${post.id}`;
+      const shareUrl = data.shareUrl;
+      const shareTitle = data.title;
+      const shareText = data.text;
 
-      const shareTitle = data?.title || "SocialGist";
-      const shareText = data?.text || post.description || "";
-
-      // ================= 2. INSTANT SHARE =================
       if (navigator.share) {
-        navigator.share({
+        await navigator.share({
           title: shareTitle,
           text: shareText,
           url: shareUrl,
-        }).catch(() => { });
+        });
       } else {
         await navigator.clipboard.writeText(shareUrl);
         alert("Link copied to clipboard");
       }
 
-      // ================= 3. BACKGROUND TASKS =================
-      (async () => {
-        try {
-          await supabase
-            .from("posts")
-            .update({
-              shares_count: (post.shares_count || 0) + 1,
-            })
-            .eq("id", post.id);
-        } catch (err) {
-          console.log("Share count error:", err);
-        }
-      })();
+      await supabase
+        .from("posts")
+        .update({
+          shares_count: (post.shares_count || 0) + 1,
+        })
+        .eq("id", post.id);
+
     } catch (err) {
-      console.error("Share failed:", err);
+      console.error(err);
     }
   };
   // ================= LOADING =================

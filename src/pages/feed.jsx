@@ -2,6 +2,7 @@
 import { supabase } from "../configs/supbase";
 import { useState, useEffect } from "react";
 import { BiShare } from "react-icons/bi";
+import { toBlob } from "html-to-image";
 import {
   MessageCircle,
   Wifi,
@@ -1322,33 +1323,43 @@ export default function Feed({
     };
   }, []);
 
-  const sharePost = async (post) => {
-    if (!post?.id) return;
 
+
+  const sharePost = async (post) => {
     try {
-      const { data, error } = await supabase.functions.invoke("share-post", {
-        body: {
-          postId: post.id,
-        },
+      const element = document.getElementById(`post-${post.id}`);
+      if (!element) return;
+
+      const blob = await toBlob(element, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
       });
 
-      if (error) throw error;
+      if (!blob) return;
 
-      const shareUrl = data.shareUrl;
-      const shareTitle = data.title;
-      const shareText = data.text;
+      const file = new File([blob], `socialgist-post-${post.id}.png`, {
+        type: "image/png",
+      });
 
-      if (navigator.share) {
+      const shareUrl = `https://social-gist.vercel.app/p/${post.id}`;
+
+      if (
+        navigator.canShare &&
+        navigator.canShare({ files: [file] })
+      ) {
         await navigator.share({
-          title: shareTitle,
-          text: shareText,
+          title: "SocialGist",
+          text: post.description || "",
+          files: [file],
           url: shareUrl,
         });
       } else {
         await navigator.clipboard.writeText(shareUrl);
-        alert("Link copied to clipboard");
+        alert("Link copied to clipboard.");
       }
 
+      // Update share count
       await supabase
         .from("posts")
         .update({
@@ -1357,7 +1368,7 @@ export default function Feed({
         .eq("id", post.id);
 
     } catch (err) {
-      console.error(err);
+      console.error("Share failed:", err);
     }
   };
   // ================= LOADING =================

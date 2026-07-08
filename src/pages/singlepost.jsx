@@ -491,6 +491,25 @@ export default function SinglePost() {
           </div>
 
         </div>
+
+        {/* BACK TO FEED BUTTON */}
+        <button
+          onClick={() => navigate("/feed")}
+          className="
+          mt-6
+          px-5
+          py-2.5
+          rounded-xl
+          bg-purple-600
+          text-white
+          font-medium
+          hover:bg-purple-700
+          active:scale-95
+          transition
+        "
+        >
+          Go back to Feed
+        </button>
       </div>
     </div>
   );

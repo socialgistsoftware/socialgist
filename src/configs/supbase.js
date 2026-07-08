@@ -1,13 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Vite syntax using the VITE_ prefix
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = "https://ukghwpkdlsqgwbjhmezy.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrZ2h3cGtkbHNxZ3diamhtZXp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTAzNTIsImV4cCI6MjA5NDMyNjM1Mn0.ZhknNkiUeg1g-7KJowEaUDzChymAQoK1vZc52F8XKcM";
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: false,
-  },
-});
+export const supabase = createClient(supabaseUrl, supabaseAnonKey,
+    {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+    },
+  }
+);

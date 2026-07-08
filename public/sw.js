@@ -25,8 +25,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "SocialGist";
   const options = {
     body: data.body || "New notification",
-    icon: "/icon.png",
-    badge: "/icon.png",
+    icon: "/logo.png",
+    badge: "/logo.png",
     data: data,
     requireInteraction: false
   };

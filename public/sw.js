@@ -1,70 +1,15 @@
-// ================= SOCIALGIST SERVICE WORKER =================
+// ================= SERVICE WORKER (CLEAN PWA VERSION) =================
 
-const CACHE_NAME = "socialgist-cache-v1";
-
-const APP_SHELL = [
-  "/",
-  "/index.html",
-  "/logo.png",
-  "/icon.png",
-  "/assets/index.js",
-  "/assets/index.css"
-];
-
-// ================= INSTALL =================
+// Install
 self.addEventListener("install", (event) => {
+  console.log("Service Worker installed");
   self.skipWaiting();
-
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_SHELL);
-    })
-  );
 });
 
-// ================= ACTIVATE =================
+// Activate
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      )
-    )
-  );
-
-  self.clients.claim();
-});
-
-// ================= FETCH (OFFLINE SUPPORT) =================
-self.addEventListener("fetch", (event) => {
-  const request = event.request;
-
-  if (request.method !== "GET") return;
-
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      return (
-        cached ||
-        fetch(request)
-          .then((response) => {
-            const clone = response.clone();
-
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, clone);
-            });
-
-            return response;
-          })
-          .catch(() => {
-            if (request.mode === "navigate") {
-              return caches.match("/");
-            }
-          })
-      );
-    })
-  );
+  console.log("Service Worker activated");
+  event.waitUntil(self.clients.claim());
 });
 
 // ================= PUSH NOTIFICATION =================
@@ -73,14 +18,17 @@ self.addEventListener("push", (event) => {
 
   try {
     data = event.data ? event.data.json() : {};
-  } catch (e) { }
+  } catch (e) {
+    console.log("Push parse error", e);
+  }
 
   const title = data.title || "SocialGist";
   const options = {
     body: data.body || "New notification",
-    icon: "/logo.png",
-    badge: "/logo.png",
-    data: data
+    icon: "/icon.png",
+    badge: "/icon.png",
+    data: data,
+    requireInteraction: false
   };
 
   event.waitUntil(
@@ -104,5 +52,14 @@ self.addEventListener("notificationclick", (event) => {
       }
       return clients.openWindow(url);
     })
+  );
+});
+
+// ================= SIMPLE CACHE =================
+const CACHE_NAME = "socialgist-cache-v1";
+
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });

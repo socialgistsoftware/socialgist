@@ -1338,12 +1338,17 @@ export default function Feed({
 
       if (!blob) return;
 
-      const file = new File([blob], `socialgist-post-${post.id}.png`, {
-        type: "image/png",
-      });
+      const file = new File(
+        [blob],
+        `socialgist-post-${post.id}.png`,
+        {
+          type: "image/png",
+        }
+      );
 
       const shareUrl = `https://social-gist.vercel.app/p/${post.id}`;
 
+      // Share
       if (
         navigator.canShare &&
         navigator.canShare({ files: [file] })
@@ -1366,6 +1371,17 @@ export default function Feed({
           shares_count: (post.shares_count || 0) + 1,
         })
         .eq("id", post.id);
+
+
+// Send notification
+await supabase.functions.invoke("send-fcm", {
+  body: {
+    type: "share",
+    sender: post.profile_name,
+    receiver: post.user_id,
+    postId: post.id,
+  },
+});
 
     } catch (err) {
       console.error("Share failed:", err);

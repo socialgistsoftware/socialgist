@@ -81,35 +81,70 @@ export default function PostPage() {
         const loadingToast = toast.loading("Deleting post...");
 
         try {
-            // 1. FIRST get post owner
+            // Get the full post
             const { data: postData, error: fetchError } = await supabase
                 .from("posts")
-                .select("user_id")
+                .select("*")
                 .eq("id", deleteTarget)
                 .single();
 
             if (fetchError) throw fetchError;
 
-            // 2. DELETE POST
-            const { error } = await supabase
+            // Delete image from Storage
+            if (postData.image) {
+                try {
+                    const imagePath = postData.image.split("/post-images/")[1];
+
+                    if (imagePath) {
+                        const { error: storageError } = await supabase.storage
+                            .from("post-images")
+                            .remove([imagePath]);
+
+                        if (storageError) {
+                            console.log("Storage delete error:", storageError);
+                        }
+                    }
+                } catch (err) {
+                    console.log("Storage delete failed:", err);
+                }
+            }
+
+            // Delete post
+            const { error: deleteError } = await supabase
                 .from("posts")
                 .delete()
                 .eq("id", deleteTarget);
 
-            if (error) throw error;
+            if (deleteError) throw deleteError;
 
-            // 3. DECREASE posts_count in profiles
-            await supabase.rpc("decrement_posts_count", {
-                user_id_input: postData.user_id,
-            });
+            // Get current posts_count
+            const { data: profile, error: profileError } = await supabase
+                .from("profiles")
+                .select("posts_count")
+                .eq("id", postData.user_id)
+                .single();
 
-            // 4. update UI
+            if (!profileError && profile) {
+                await supabase
+                    .from("profiles")
+                    .update({
+                        posts_count: Math.max((profile.posts_count || 1) - 1, 0),
+                    })
+                    .eq("id", postData.user_id);
+            }
+
+            // Update UI
             setPosts((prev) => prev.filter((p) => p.id !== deleteTarget));
 
-            toast.success("Post deleted", { id: loadingToast });
+            toast.success("Post deleted", {
+                id: loadingToast,
+            });
         } catch (err) {
-            console.log(err);
-            toast.error("Failed to delete post", { id: loadingToast });
+            console.error(err);
+
+            toast.error("Failed to delete post", {
+                id: loadingToast,
+            });
         } finally {
             setDeleteTarget(null);
         }
